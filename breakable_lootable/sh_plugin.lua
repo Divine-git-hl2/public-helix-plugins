@@ -21,6 +21,12 @@ function PLUGIN:SpawnBreakableLootable(lootableType)
     local data = self.BreakableLootableTypes[lootableType]
     if not data then return end
 
+    for _, ent in ipairs(ents.FindByClass("heawi_breakable_lootable")) do
+        if ent:GetNetVar("lootableName") == data.Name then
+            ent:Remove()
+        end
+    end
+
     for _, spawn in ipairs(data.SpawnsLocations) do
         local ent = ents.Create("heawi_breakable_lootable")
 

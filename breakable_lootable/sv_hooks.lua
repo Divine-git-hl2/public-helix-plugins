@@ -1,6 +1,6 @@
 local PLUGIN = PLUGIN
 
-function PLUGIN:LoadData()
+function PLUGIN:InitPostEntity()
     for lootableType, _ in pairs(self.BreakableLootableTypes) do
         self:SpawnBreakableLootable(lootableType)
     end

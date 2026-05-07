@@ -13,7 +13,7 @@ PLUGIN:RegisterBreakableLootable("supply_crate", { -- key to the breakable loota
         { pos = Vector(581.705, -986.773, -143.546), ang = Angle(0.096, 18.462, -0.071) }
     },
 
-    SoundOnBreak = "physics/wood/wood_crate_break3.wav", -- sound which will play upon destroying the prop
+    SoundOnBreak = "physics/wood/wood_crate_break3.wav", -- sound which will play upon destroying the prop (optional but recommended)
 
     ItemDrops = { -- Items that have a chance to spawn (if you want it to always drop just set chance to 100)
         { item = "pistolammo", chance = 100 },

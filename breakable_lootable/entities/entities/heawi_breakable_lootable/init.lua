@@ -28,7 +28,6 @@ end
 
 function ENT:Die()
     local soundOnBreak = self.SoundOnBreak
-    local lootableName = self:GetNWString("LootableName", "Lootable")
 
     for _, drop in ipairs(self.ItemDrops or {}) do
         if math.random(100) <= drop.chance then

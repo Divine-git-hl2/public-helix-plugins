@@ -29,6 +29,7 @@ function PLUGIN:SpawnBreakableLootable(lootableType)
 
     for _, spawn in ipairs(data.SpawnsLocations) do
         local ent = ents.Create("heawi_breakable_lootable")
+        if not IsValid(ent) then return end
 
         ent:SetPos(spawn.pos)
         ent:SetAngles(spawn.ang)

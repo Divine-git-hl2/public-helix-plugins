@@ -51,6 +51,11 @@ function PLUGIN:FinishCooking(client)
         end
     end
 
+    local char = client:GetCharacter()
+    if char and data.recipe.ExperienceToGive then
+        char:UpdateAttrib("cook", data.recipe.ExperienceToGive)
+    end
+
     client:Notify("You cooked " .. (data.recipe.Name or "something") .. "!")
 end
 

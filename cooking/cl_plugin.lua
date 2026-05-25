@@ -33,6 +33,8 @@ function createHeawiCookingFonts()
     })
 end
 
+createHeawiCookingFonts()
+
 net.Receive("heawi_cooking_open", function()
     if IsValid(frame) then
         frame:Remove()
@@ -75,9 +77,11 @@ net.Receive("heawi_cooking_open", function()
     closeButton:SetSize(closeButtonW, topBarH)
     closeButton:SetPos(frame:GetWide() - closeButtonW, 0)
     closeButton:SetText("")
+
     closeButton.Paint = function(self, w, h)
         draw.SimpleText("X", "Cooking_Title", w / 2, h / 2, self:IsHovered() and closeHoverColor or color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
+
     closeButton.DoClick = function()
         if IsValid(frame) then
             frame:Remove()
@@ -172,14 +176,18 @@ net.Receive("heawi_cooking_open", function()
         local rowY = ingredientsY + scrH * 0.035
         for _, ingredient in ipairs(recipe.Ingredients) do
             local row = vgui.Create("DPanel", right)
+
             row:SetSize(rowW, rowH)
             row:SetPos(pad, rowY)
+
             local text = ingredient.amount .. " " .. (ingredient.displayName or ingredient.item)
+
             row.Paint = function(self, w, h)
                 surface.SetDrawColor(buttonColor)
                 surface.DrawRect(0, 0, w, h)
                 draw.SimpleText(text, "Cooking_Body", pad / 2, h / 2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
             end
+
             rowY = rowY + rowH + 4
         end
 
@@ -194,14 +202,19 @@ net.Receive("heawi_cooking_open", function()
         rowY = givesY + scrH * 0.035
         for _, item in ipairs(recipe.ItemsToGive) do
             local row = vgui.Create("DPanel", right)
+
             row:SetSize(rowW, rowH)
             row:SetPos(pad, rowY)
+
             local text = item.amount .. " " .. (item.displayName or item.item)
+
             row.Paint = function(self, w, h)
+
                 surface.SetDrawColor(buttonColor)
                 surface.DrawRect(0, 0, w, h)
                 draw.SimpleText(text, "Cooking_Body", pad / 2, h / 2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
             end
+
             rowY = rowY + rowH + 4
         end
 
@@ -209,6 +222,7 @@ net.Receive("heawi_cooking_open", function()
         cookBtn:SetSize(rowW, scrH * 0.06)
         cookBtn:SetPos(pad, right:GetTall() - scrH * 0.06 - pad)
         cookBtn:SetText("")
+
         cookBtn.Paint = function(self, w, h)
             surface.SetDrawColor(self:IsHovered() and color_white or buttonColor)
             surface.DrawRect(0, 0, w, h)

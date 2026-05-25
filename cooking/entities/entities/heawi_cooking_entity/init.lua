@@ -16,13 +16,10 @@ function ENT:Initialize()
 end
 
 function ENT:Use(activator)
-    if not activator:IsPlayer() then
-        return
-    end
+    if not activator:IsPlayer() then return end
+    if activator:GetPos():Distance(self:GetPos()) > 70 then return end
 
-    if activator:GetPos():Distance(self:GetPos()) > 70 then
-        return
-    end
-
-    netstream.Start(activator, "heawi_cooking_open", self)
+    net.Start("heawi_cooking_open")
+    net.WriteEntity(self)
+    net.Send(activator)
 end

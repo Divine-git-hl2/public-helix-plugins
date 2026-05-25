@@ -10,7 +10,7 @@ local modelCamPos = Vector(90, 90, 60)
 local modelLookAt = Vector(0, 0, 0)
 local modelAngle = Angle(0, 35, 0)
 
-netstream.Hook("heawi_cooking_open", function(stove)
+net.Receive("heawi_cooking_open", function()
     local stove = net.ReadEntity()
     local recipes = ix.plugin.Get("cooking").CookingRecipes
 
@@ -182,7 +182,10 @@ netstream.Hook("heawi_cooking_open", function(stove)
             draw.SimpleText("COOK", "CloseCaption_Bold", w / 2, h / 2, self:IsHovered() and Color(20, 20, 20) or accentColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
         cookBtn.DoClick = function()
-            netstream.Start("heawi_cooking_start", stove, recipeID)
+            net.Start("heawi_cooking_start")
+                net.WriteUInt(recipeID, 16)
+                net.WriteEntity(stove)
+            net.SendToServer()
             frame:Close()
         end
     end

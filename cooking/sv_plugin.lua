@@ -1,3 +1,6 @@
+util.AddNetworkString("heawi_cooking_start")
+util.AddNetworkString("heawi_cooking_open")
+
 local PLUGIN = PLUGIN
 PLUGIN.activeCooking = PLUGIN.activeCooking or {}
 
@@ -114,11 +117,18 @@ function PLUGIN:CookRecipe(client, id, stove)
     return true
 end
 
-netstream.Hook("heawi_cooking_start", function(client, stove, recipeID)
-    if not IsValid(stove) then return end
+
+net.Receive("heawi_cooking_start", function(len, client)
+    local recipeID = net.ReadUInt(16)
+    local stove = net.ReadEntity()
+
+    if not IsValid(stove) or stove:GetClass() ~= "heawi_cooking_entity" then return end
 
     local ok, err = PLUGIN:CookRecipe(client, recipeID, stove)
-    if not ok then client:Notify(err) end
+
+    if not ok then
+        client:Notify(err)
+    end
 end)
 
 timer.Create("heawi_cooking_distance", 1, 0, function()

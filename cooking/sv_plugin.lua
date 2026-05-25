@@ -30,7 +30,7 @@ function PLUGIN:StopCooking(client, reason)
 
     if reason == "cancel" then
         self:RefundIngredients(data.inventory, data.ingredients, client, data.stove:GetPos())
-        client:Notify("You have stopped Cooking")
+        client:Notify("You have stopped cooking")
     end
 end
 

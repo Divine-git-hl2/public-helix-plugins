@@ -1,3 +1,5 @@
+local PLUGIN = PLUGIN
+
 local frameColor = Color(20, 20, 20, 250)
 local frameTopBarColor = Color(20, 20, 20, 255)
 local accentColor = Color(180, 140, 80, 255)
@@ -10,19 +12,46 @@ local modelCamPos = Vector(90, 90, 60)
 local modelLookAt = Vector(0, 0, 0)
 local modelAngle = Angle(0, 35, 0)
 
+local color_white = Color(255, 255, 255, 255)
+local color_black = Color(0, 0, 0, 255)
+
+local frame
+
+function createHeawiCookingFonts()
+    local scale = ScrH() / 1080
+
+    surface.CreateFont("Cooking_Title", {
+        font = "Roboto Bold",
+        size = math.Round(28 * scale),
+        weight = 700,
+    })
+
+    surface.CreateFont("Cooking_Body", {
+        font = "Roboto",
+        size = math.Round(20 * scale),
+        weight = 400,
+    })
+end
+
 net.Receive("heawi_cooking_open", function()
+    if IsValid(frame) then
+        frame:Remove()
+    end
+
     local stove = net.ReadEntity()
     local recipes = ix.plugin.Get("cooking").CookingRecipes
 
     local scrW, scrH = ScrW(), ScrH()
 
-    local frame = vgui.Create("DFrame")
+    frame = vgui.Create("DFrame")
     frame:SetTitle("")
     frame:SetSize(scrW, scrH)
     frame:Center()
     frame:SetDraggable(false)
     frame:SetSizable(false)
+    frame:ParentToHUD()
     frame:ShowCloseButton(false)
+    frame:SetDeleteOnClose(true)
     frame:MakePopup()
 
     local topBarH = scrH * 0.05
@@ -34,9 +63,11 @@ net.Receive("heawi_cooking_open", function()
     frame.Paint = function(self, w, h)
         surface.SetDrawColor(frameColor)
         surface.DrawRect(0, 0, w, h)
+
         surface.SetDrawColor(frameTopBarColor)
         surface.DrawRect(0, 0, w, topBarH)
-        draw.SimpleText("COOKING", "CloseCaption_Bold", 12, topBarH / 2, accentColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+
+        draw.SimpleText("COOKING", "Cooking_Title", 12, topBarH / 2, accentColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
 
     local closeButtonW = scrW * 0.03
@@ -45,10 +76,12 @@ net.Receive("heawi_cooking_open", function()
     closeButton:SetPos(frame:GetWide() - closeButtonW, 0)
     closeButton:SetText("")
     closeButton.Paint = function(self, w, h)
-        draw.SimpleText("X", "CloseCaption_Bold", w / 2, h / 2, self:IsHovered() and closeHoverColor or color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        draw.SimpleText("X", "Cooking_Title", w / 2, h / 2, self:IsHovered() and closeHoverColor or color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
     closeButton.DoClick = function()
-        frame:Close()
+        if IsValid(frame) then
+            frame:Remove()
+        end
     end
 
     local body = vgui.Create("DPanel", frame)
@@ -106,23 +139,23 @@ net.Receive("heawi_cooking_open", function()
         function preview:PostDrawModel(ent) ent:SetAngles(modelAngle) end
 
         local nameLabel = vgui.Create("DLabel", right)
-        nameLabel:SetFont("CloseCaption_Bold")
-        nameLabel:SetTextColor(accentColor)
+        nameLabel:SetFont("Cooking_Title")
+        nameLabel:SetTextColor(color_white)
         nameLabel:SetText(recipe.Name)
         nameLabel:SizeToContents()
         nameLabel:SetPos(infoX, pad)
 
         local descLabel = vgui.Create("DLabel", right)
-        descLabel:SetFont("HudDefault")
+        descLabel:SetFont("Cooking_Body")
         descLabel:SetTextColor(color_white)
         descLabel:SetText(recipe.Description)
         descLabel:SetWide(right:GetWide() - infoX - pad)
         descLabel:SetTall(previewSize * 0.4)
-        descLabel:SetPos(infoX, pad + scrH * 0.04)
+        descLabel:SetPos(infoX, pad + scrH * 0.018)
         descLabel:SetWrap(true)
 
         local prepLabel = vgui.Create("DLabel", right)
-        prepLabel:SetFont("HudDefault")
+        prepLabel:SetFont("Cooking_Body")
         prepLabel:SetTextColor(color_white)
         prepLabel:SetText("Preparation time: " .. recipe.PreparationTime .. "s")
         prepLabel:SizeToContents()
@@ -130,8 +163,8 @@ net.Receive("heawi_cooking_open", function()
 
         local ingredientsY = pad + previewSize + pad
         local ingredientsLabel = vgui.Create("DLabel", right)
-        ingredientsLabel:SetFont("CloseCaption_Bold")
-        ingredientsLabel:SetTextColor(accentColor)
+        ingredientsLabel:SetFont("Cooking_Title")
+        ingredientsLabel:SetTextColor(color_white)
         ingredientsLabel:SetText("INGREDIENTS")
         ingredientsLabel:SizeToContents()
         ingredientsLabel:SetPos(pad, ingredientsY)
@@ -145,15 +178,15 @@ net.Receive("heawi_cooking_open", function()
             row.Paint = function(self, w, h)
                 surface.SetDrawColor(buttonColor)
                 surface.DrawRect(0, 0, w, h)
-                draw.SimpleText(text, "HudDefault", pad / 2, h / 2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+                draw.SimpleText(text, "Cooking_Body", pad / 2, h / 2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
             end
             rowY = rowY + rowH + 4
         end
 
         local givesY = rowY + pad
         local givesLabel = vgui.Create("DLabel", right)
-        givesLabel:SetFont("CloseCaption_Bold")
-        givesLabel:SetTextColor(accentColor)
+        givesLabel:SetFont("Cooking_Title")
+        givesLabel:SetTextColor(color_white)
         givesLabel:SetText("GIVES")
         givesLabel:SizeToContents()
         givesLabel:SetPos(pad, givesY)
@@ -167,7 +200,7 @@ net.Receive("heawi_cooking_open", function()
             row.Paint = function(self, w, h)
                 surface.SetDrawColor(buttonColor)
                 surface.DrawRect(0, 0, w, h)
-                draw.SimpleText(text, "HudDefault", pad / 2, h / 2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+                draw.SimpleText(text, "Cooking_Body", pad / 2, h / 2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
             end
             rowY = rowY + rowH + 4
         end
@@ -177,16 +210,18 @@ net.Receive("heawi_cooking_open", function()
         cookBtn:SetPos(pad, right:GetTall() - scrH * 0.06 - pad)
         cookBtn:SetText("")
         cookBtn.Paint = function(self, w, h)
-            surface.SetDrawColor(self:IsHovered() and accentColor or buttonColor)
+            surface.SetDrawColor(self:IsHovered() and color_white or buttonColor)
             surface.DrawRect(0, 0, w, h)
-            draw.SimpleText("COOK", "CloseCaption_Bold", w / 2, h / 2, self:IsHovered() and Color(20, 20, 20) or accentColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            draw.SimpleText("COOK", "Cooking_Title", w / 2, h / 2, self:IsHovered() and color_black or color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
         cookBtn.DoClick = function()
             net.Start("heawi_cooking_start")
                 net.WriteString(recipeID)
                 net.WriteEntity(stove)
             net.SendToServer()
-            frame:Close()
+            if IsValid(frame) then
+                frame:Remove()
+            end
         end
     end
 
@@ -213,7 +248,7 @@ net.Receive("heawi_cooking_open", function()
             surface.DrawRect(0, 0, w, h)
             surface.SetDrawColor(modelBGColor)
             surface.DrawRect(iconPad, iconPad, iconCellSize, iconCellSize)
-            draw.SimpleText(recipe.Name, "HudDefault", textOffsetX, h / 2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            draw.SimpleText(recipe.Name, "Cooking_Body", textOffsetX, h / 2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         end
 
         btn.DoClick = function()

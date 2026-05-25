@@ -4,6 +4,14 @@ PLUGIN.name = "Cooking"
 PLUGIN.author = "Heawi"
 PLUGIN.description = "Adds cooking of foods and drinks"
 
+function PLUGIN:Initialize()
+    createHeawiCookingFonts()
+end
+
+function PLUGIN:ScreenResolutionChanged()
+    createHeawiCookingFonts()
+end
+
 PLUGIN.CookingRecipes = PLUGIN.CookingRecipes or {}
 
 function PLUGIN:RegisterRecipe(food, foodData)

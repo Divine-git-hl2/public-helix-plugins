@@ -21,7 +21,7 @@ function PLUGIN:StopCooking(client, reason)
     data.cancelled = true
     self.activeCooking[client] = nil
 
-    client.ixIsCooking = nil
+    client.IsCooking = nil
     client:SetAction()
 
     if data.timerID then
@@ -30,7 +30,7 @@ function PLUGIN:StopCooking(client, reason)
 
     if reason == "cancel" then
         self:RefundIngredients(data.inventory, data.ingredients, client, data.stove:GetPos())
-        client:Notify("Cooking cancelled.")
+        client:Notify("You have stopped Cooking")
     end
 end
 
@@ -40,7 +40,7 @@ function PLUGIN:FinishCooking(client)
     if not IsValid(client) or not IsValid(data.stove) then return end
 
     self.activeCooking[client] = nil
-    client.ixIsCooking = nil
+    client.IsCooking = nil
     client:SetAction()
 
     for _, out in ipairs(data.recipe.ItemsToGive or {}) do
@@ -57,7 +57,7 @@ end
 function PLUGIN:CookRecipe(client, id, stove)
     local recipe = self.CookingRecipes[id]
     if not recipe then return false, "invalid recipe" end
-    if self.activeCooking[client] then return false, "already cooking" end
+    if self.activeCooking[client] then return false, "You are already cooking" end
 
     local char = client:GetCharacter()
     if not char then return false, "no character" end
@@ -70,7 +70,7 @@ function PLUGIN:CookRecipe(client, id, stove)
     end
 
     if client:GetPos():DistToSqr(stove:GetPos()) > (70 * 70) then
-        return false, "too far away"
+        return false, "You have left the stove"
     end
 
     local removed = {}
@@ -89,11 +89,11 @@ function PLUGIN:CookRecipe(client, id, stove)
 
         if count < ing.amount then
             self:RefundIngredients(inv, removed, client, stove:GetPos())
-            return false, "missing ingredients"
+            return false, "You are missing ingredients"
         end
     end
 
-    client.ixIsCooking = true
+    client.IsCooking = true
 
     local timerID = "Cooking_" .. client:SteamID64() .. "_" .. CurTime()
 

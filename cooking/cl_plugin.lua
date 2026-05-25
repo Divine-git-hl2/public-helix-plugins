@@ -239,7 +239,15 @@ net.Receive("heawi_cooking_open", function()
         end
     end
 
+    local char = LocalPlayer():GetCharacter()
+    local attribs = char and char:GetData("attribs", {}) or {}
+    local skill = attribs["cook"] or 0
+
     for recipeID, recipe in pairs(recipes) do
+        if skill < (recipe.MinExpToCook or 0) then
+            continue
+        end
+
         local btn = left:Add("DButton")
         btn:Dock(TOP)
         btn:SetTall(scrH * 0.06)
@@ -255,14 +263,27 @@ net.Receive("heawi_cooking_open", function()
         icon:SetCamPos(modelCamPos)
         icon:SetLookAt(modelLookAt)
         icon.LayoutEntity = function() end
-        function icon:PostDrawModel(ent) ent:SetAngles(modelAngle) end
+
+        function icon:PostDrawModel(ent)
+            ent:SetAngles(modelAngle)
+        end
 
         btn.Paint = function(self, w, h)
             surface.SetDrawColor(buttonColor)
             surface.DrawRect(0, 0, w, h)
+
             surface.SetDrawColor(modelBGColor)
             surface.DrawRect(iconPad, iconPad, iconCellSize, iconCellSize)
-            draw.SimpleText(recipe.Name, "Cooking_Body", textOffsetX, h / 2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+
+            draw.SimpleText(
+                recipe.Name,
+                "Cooking_Body",
+                textOffsetX,
+                h / 2,
+                color_white,
+                TEXT_ALIGN_LEFT,
+                TEXT_ALIGN_CENTER
+            )
         end
 
         btn.DoClick = function()

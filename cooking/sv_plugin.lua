@@ -63,9 +63,16 @@ function PLUGIN:CookRecipe(client, id, stove)
     local recipe = self.CookingRecipes[id]
     if not recipe then return false, "invalid recipe" end
     if self.activeCooking[client] then return false, "You are already cooking" end
+    
 
     local char = client:GetCharacter()
     if not char then return false, "no character" end
+
+    local attribs = char:GetData("attribs", {})
+    local skill = attribs["cook"] or 0
+    if skill < (recipe.MinExpToCook or 0) then
+        return false, "You lack the experience to cook this"
+    end
 
     local inv = char:GetInventory()
     if not inv then return false, "no inventory" end

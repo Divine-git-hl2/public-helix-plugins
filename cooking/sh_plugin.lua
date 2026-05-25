@@ -10,7 +10,8 @@ function PLUGIN:RegisterRecipe(food, foodData)
     assert(foodData.Name, food .. " is missing name")
     assert(foodData.Description, food .. " is missing description")
     assert(foodData.PreparationTime, food .. " is missing preparation time")
-    
+    assert(foodData.MinExpToCook, food .. " is missing minimal experience needed to cook")
+    assert(foodData.ExperienceToGive, food .. " is missing the amount of xp to reward ")
     assert(foodData.Ingredients, food .. " is missing ingredients")
     assert(foodData.ItemsToGive, food .. " is missing items to give")
 

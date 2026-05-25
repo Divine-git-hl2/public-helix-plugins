@@ -155,7 +155,7 @@ net.Receive("heawi_cooking_open", function()
         descLabel:SetText(recipe.Description)
         descLabel:SetWide(right:GetWide() - infoX - pad)
         descLabel:SetTall(previewSize * 0.4)
-        descLabel:SetPos(infoX, pad + scrH * 0.018)
+        descLabel:SetPos(infoX, pad + scrH * 0.025)
         descLabel:SetWrap(true)
 
         local prepLabel = vgui.Create("DLabel", right)
@@ -164,6 +164,14 @@ net.Receive("heawi_cooking_open", function()
         prepLabel:SetText("Preparation time: " .. recipe.PreparationTime .. "s")
         prepLabel:SizeToContents()
         prepLabel:SetPos(infoX, pad + scrH * 0.04 + previewSize * 0.4 + scrH * 0.01)
+
+        local expLabel = vgui.Create("DLabel", right)
+        expLabel:SetFont("Cooking_Body")
+        expLabel:SetTextColor(accentColor)
+        expLabel:SetText("Required cooking experience: " .. (recipe.MinExpToCook or 0))
+        expLabel:SetPos(infoX, prepLabel.y + prepLabel:GetTall() + 6)
+        expLabel:SetWide(right:GetWide() - infoX - pad)
+        expLabel:SetWrap(true)
 
         local ingredientsY = pad + previewSize + pad
         local ingredientsLabel = vgui.Create("DLabel", right)

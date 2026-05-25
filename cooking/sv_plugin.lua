@@ -119,7 +119,7 @@ end
 
 
 net.Receive("heawi_cooking_start", function(len, client)
-    local recipeID = net.ReadUInt(16)
+    local recipeID = net.ReadString()
     local stove = net.ReadEntity()
 
     if not IsValid(stove) or stove:GetClass() ~= "heawi_cooking_entity" then return end

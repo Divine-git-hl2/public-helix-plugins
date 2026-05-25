@@ -82,7 +82,7 @@ net.Receive("heawi_cooking_open", function()
 
         local pad = scrW * 0.02
         local previewSize = scrH * 0.15
-        local rowH = scrH * 0.045
+        local rowH = scrH * 0.030
         local rowW = right:GetWide() - pad * 2
         local infoX = pad + previewSize + pad
 
@@ -183,7 +183,7 @@ net.Receive("heawi_cooking_open", function()
         end
         cookBtn.DoClick = function()
             net.Start("heawi_cooking_start")
-                net.WriteUInt(recipeID, 16)
+                net.WriteString(recipeID)
                 net.WriteEntity(stove)
             net.SendToServer()
             frame:Close()

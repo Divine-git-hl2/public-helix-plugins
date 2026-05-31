@@ -4,7 +4,7 @@ PLUGIN:RegisterRecipe("chinese_takeout", {
     Name = "Noodles",
     Model = "models/props_junk/garbage_takeoutcarton001a.mdl",
     Description = "Simple noodles made out of flour and water",
-    PreparationTime = 2,
+    PreparationTime = 20,
     Ingredients = {
         { item = "water", displayName ="Water",  amount = 1 },
         { item = "milk_carton", displayName="Milk",   amount = 1 },

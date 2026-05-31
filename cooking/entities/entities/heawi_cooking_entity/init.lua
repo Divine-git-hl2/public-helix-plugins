@@ -20,6 +20,5 @@ function ENT:Use(activator)
     if activator:GetPos():Distance(self:GetPos()) > 70 then return end
 
     net.Start("heawi_cooking_open")
-    net.WriteEntity(self)
     net.Send(activator)
 end

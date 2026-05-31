@@ -3,12 +3,14 @@ util.AddNetworkString("heawi_cooking_open")
 
 local PLUGIN = PLUGIN
 PLUGIN.activeCooking = PLUGIN.activeCooking or {}
+PLUGIN._cookingCounter = PLUGIN._cookingCounter or 0
 
 function PLUGIN:RefundIngredients(inv, ingredients, client, pos)
+    local refundPos = pos or (IsValid(client) and client:GetPos()) or Vector(0, 0, 0)
     for _, ing in ipairs(ingredients) do
         for i = 1, ing.amount do
             if not inv:Add(ing.item) then
-                ix.item.Spawn(ing.item, pos or client:GetPos())
+                ix.item.Spawn(ing.item, refundPos)
             end
         end
     end
@@ -22,15 +24,22 @@ function PLUGIN:StopCooking(client, reason)
     self.activeCooking[client] = nil
 
     client.IsCooking = nil
-    client:SetAction()
+
+    if IsValid(client) then
+        client:SetAction()
+        client:SetMoveType(MOVETYPE_WALK)
+    end
 
     if data.timerID then
         timer.Remove(data.timerID)
     end
 
     if reason == "cancel" then
-        self:RefundIngredients(data.inventory, data.ingredients, client, data.stove:GetPos())
-        client:Notify("You have stopped cooking")
+        local pos = IsValid(data.stove) and data.stove:GetPos() or (IsValid(client) and client:GetPos() or nil)
+        self:RefundIngredients(data.inventory, data.ingredients, client, pos)
+        if IsValid(client) then
+            client:Notify("You have stopped cooking")
+        end
     end
 end
 
@@ -39,20 +48,26 @@ function PLUGIN:FinishCooking(client)
     if not data or data.cancelled then return end
     if not IsValid(client) or not IsValid(data.stove) then return end
 
+    local char = client:GetCharacter()
+    if not char then return end
+
+    local inv = char:GetInventory()
+    if not inv then return end
+
     self.activeCooking[client] = nil
     client.IsCooking = nil
     client:SetAction()
+    client:SetMoveType(MOVETYPE_WALK)
 
     for _, out in ipairs(data.recipe.ItemsToGive or {}) do
         for i = 1, out.amount do
-            if not data.inventory:Add(out.item) then
+            if not inv:Add(out.item) then
                 ix.item.Spawn(out.item, data.stove:GetPos())
             end
         end
     end
 
-    local char = client:GetCharacter()
-    if char and data.recipe.ExperienceToGive then
+    if data.recipe.ExperienceToGive then
         char:UpdateAttrib("cook", data.recipe.ExperienceToGive)
     end
 
@@ -60,10 +75,11 @@ function PLUGIN:FinishCooking(client)
 end
 
 function PLUGIN:CookRecipe(client, id, stove)
+    if type(id) ~= "string" or #id > 64 then return false, "invalid recipe" end
+
     local recipe = self.CookingRecipes[id]
     if not recipe then return false, "invalid recipe" end
     if self.activeCooking[client] then return false, "You are already cooking" end
-    
 
     local char = client:GetCharacter()
     if not char then return false, "no character" end
@@ -82,7 +98,7 @@ function PLUGIN:CookRecipe(client, id, stove)
     end
 
     if client:GetPos():DistToSqr(stove:GetPos()) > (70 * 70) then
-        return false, "You have left the stove"
+        return false, "You are not near a stove"
     end
 
     local removed = {}
@@ -106,8 +122,10 @@ function PLUGIN:CookRecipe(client, id, stove)
     end
 
     client.IsCooking = true
+    client:SetMoveType(MOVETYPE_NONE)
 
-    local timerID = "Cooking_" .. client:SteamID64() .. "_" .. CurTime()
+    PLUGIN._cookingCounter = PLUGIN._cookingCounter + 1
+    local timerID = "heawi_cooking_" .. client:SteamID64() .. "_" .. PLUGIN._cookingCounter
 
     self.activeCooking[client] = {
         recipe = recipe,
@@ -129,26 +147,30 @@ function PLUGIN:CookRecipe(client, id, stove)
     return true
 end
 
-
 net.Receive("heawi_cooking_start", function(len, client)
-    local recipeID = net.ReadString()
-    local stove = net.ReadEntity()
+    if client.heawi_cookingCooldown and client.heawi_cookingCooldown > CurTime() then return end
+    client.heawi_cookingCooldown = CurTime() + 1
 
-    if not IsValid(stove) or stove:GetClass() ~= "heawi_cooking_entity" then return end
+    if client.IsCooking then return end
+
+    local recipeID = net.ReadString()
+    if type(recipeID) ~= "string" or #recipeID > 64 then return end
+
+    local stove
+    for _, ent in ipairs(ents.FindInSphere(client:GetPos(), 70)) do
+        if ent:GetClass() == "heawi_cooking_entity" then
+            stove = ent
+            break
+        end
+    end
+
+    if not IsValid(stove) then
+        client:Notify("You are not near a stove")
+        return
+    end
 
     local ok, err = PLUGIN:CookRecipe(client, recipeID, stove)
-
     if not ok then
         client:Notify(err)
-    end
-end)
-
-timer.Create("heawi_cooking_distance", 1, 0, function()
-    for client, data in pairs(PLUGIN.activeCooking) do
-        if not IsValid(client) or not IsValid(data.stove) then
-            PLUGIN:StopCooking(client, "cancel")
-        elseif client:GetPos():DistToSqr(data.stove:GetPos()) > (70 * 70) then
-            PLUGIN:StopCooking(client, "cancel")
-        end
     end
 end)

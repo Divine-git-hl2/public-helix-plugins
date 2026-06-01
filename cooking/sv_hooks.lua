@@ -1,5 +1,5 @@
 local PLUGIN = PLUGIN
 
 function PLUGIN:PlayerDisconnected(client)
-    client.ixIsCooking = nil
+    client.IsCooking = nil
 end

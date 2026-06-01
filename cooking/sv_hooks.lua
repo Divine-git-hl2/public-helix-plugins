@@ -1,5 +1,7 @@
 local PLUGIN = PLUGIN
 
 function PLUGIN:PlayerDisconnected(client)
-    client.IsCooking = nil
+    if PLUGIN.activeCooking[client] then
+        PLUGIN:StopCooking(client, "cancel")
+    end
 end

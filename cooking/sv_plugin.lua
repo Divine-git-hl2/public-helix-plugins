@@ -3,26 +3,12 @@ util.AddNetworkString("heawi_cooking_open")
 
 local PLUGIN = PLUGIN
 PLUGIN.activeCooking = PLUGIN.activeCooking or {}
-PLUGIN._cookingCounter = PLUGIN._cookingCounter or 0
-
-function PLUGIN:RefundIngredients(inv, ingredients, client, pos)
-    local refundPos = pos or (IsValid(client) and client:GetPos()) or Vector(0, 0, 0)
-    for _, ing in ipairs(ingredients) do
-        for i = 1, ing.amount do
-            if not inv:Add(ing.item) then
-                ix.item.Spawn(ing.item, refundPos)
-            end
-        end
-    end
-end
 
 function PLUGIN:StopCooking(client, reason)
     local data = self.activeCooking[client]
     if not data then return end
 
-    data.cancelled = true
     self.activeCooking[client] = nil
-
     client.IsCooking = nil
 
     if IsValid(client) then
@@ -34,25 +20,56 @@ function PLUGIN:StopCooking(client, reason)
         timer.Remove(data.timerID)
     end
 
-    if reason == "cancel" then
-        local pos = IsValid(data.stove) and data.stove:GetPos() or (IsValid(client) and client:GetPos() or nil)
-        self:RefundIngredients(data.inventory, data.ingredients, client, pos)
-        if IsValid(client) then
-            client:Notify("You have stopped cooking")
-        end
+    if reason == "cancel" and IsValid(client) then
+        client:Notify("You have stopped cooking")
+    elseif reason == "stove_removed" and IsValid(client) then
+        client:Notify("The stove was removed while you were cooking")
     end
 end
 
 function PLUGIN:FinishCooking(client)
     local data = self.activeCooking[client]
-    if not data or data.cancelled then return end
-    if not IsValid(client) or not IsValid(data.stove) then return end
+    if not data then return end
+
+    if not IsValid(client) then
+        self.activeCooking[client] = nil
+        return
+    end
+
+    if not IsValid(data.stove) then
+        self:StopCooking(client, "stove_removed")
+        return
+    end
 
     local char = client:GetCharacter()
     if not char then return end
 
     local inv = char:GetInventory()
     if not inv then return end
+
+    local toRemove = {}
+    for _, ing in ipairs(data.recipe.Ingredients) do
+        local items = inv:GetItemsByUniqueID(ing.item) or {}
+        local collected = {}
+        for _, item in ipairs(items) do
+            if #collected >= ing.amount then break end
+            table.insert(collected, item)
+        end
+
+        if #collected < ing.amount then
+            self:StopCooking(client, "cancel")
+            client:Notify("You are missing ingredients, cooking cancelled")
+            return
+        end
+
+        table.insert(toRemove, collected)
+    end
+
+    for _, items in ipairs(toRemove) do
+        for _, item in ipairs(items) do
+            inv:Remove(item:GetID())
+        end
+    end
 
     self.activeCooking[client] = nil
     client.IsCooking = nil
@@ -101,22 +118,11 @@ function PLUGIN:CookRecipe(client, id, stove)
         return false, "You are not near a stove"
     end
 
-    local removed = {}
-
     for _, ing in ipairs(recipe.Ingredients) do
         local items = inv:GetItemsByUniqueID(ing.item) or {}
         local count = 0
-
-        for _, item in ipairs(items) do
-            if count >= ing.amount then break end
-            if item and inv:Remove(item:GetID()) then
-                table.insert(removed, {item = ing.item, amount = 1})
-                count = count + 1
-            end
-        end
-
+        for _ in pairs(items) do count = count + 1 end
         if count < ing.amount then
-            self:RefundIngredients(inv, removed, client, stove:GetPos())
             return false, "You are missing ingredients"
         end
     end
@@ -124,16 +130,12 @@ function PLUGIN:CookRecipe(client, id, stove)
     client.IsCooking = true
     client:SetMoveType(MOVETYPE_NONE)
 
-    PLUGIN._cookingCounter = PLUGIN._cookingCounter + 1
-    local timerID = "heawi_cooking_" .. client:SteamID64() .. "_" .. PLUGIN._cookingCounter
+    local timerID = "heawi_cooking_" .. client:SteamID64()
 
     self.activeCooking[client] = {
         recipe = recipe,
         stove = stove,
-        inventory = inv,
-        ingredients = recipe.Ingredients,
         timerID = timerID,
-        cancelled = false
     }
 
     client:SetAction("Cooking " .. recipe.Name .. "...", recipe.PreparationTime)
@@ -148,12 +150,13 @@ function PLUGIN:CookRecipe(client, id, stove)
 end
 
 net.Receive("heawi_cooking_start", function(len, client)
+    local recipeID = net.ReadString()
+
     if client.heawi_cookingCooldown and client.heawi_cookingCooldown > CurTime() then return end
     client.heawi_cookingCooldown = CurTime() + 1
 
     if client.IsCooking then return end
 
-    local recipeID = net.ReadString()
     if type(recipeID) ~= "string" or #recipeID > 64 then return end
 
     local stove

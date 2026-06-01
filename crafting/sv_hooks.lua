@@ -1,5 +1,7 @@
 local PLUGIN = PLUGIN
 
 function PLUGIN:PlayerDisconnected(client)
-    client.IsCrafting = nil
+    if PLUGIN.activeCrafting[client] then
+        PLUGIN:StopCrafting(client, "cancel")
+    end
 end

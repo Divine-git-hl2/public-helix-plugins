@@ -2,14 +2,14 @@ util.AddNetworkString("heawi_crafting_start")
 util.AddNetworkString("heawi_crafting_open")
 
 local PLUGIN = PLUGIN
-PLUGIN.activeCooking = PLUGIN.activeCooking or {}
+PLUGIN.activeCrafting = PLUGIN.activeCrafting or {}
 
-function PLUGIN:StopCooking(client, reason)
-    local data = self.activeCooking[client]
+function PLUGIN:StopCrafting(client, reason)
+    local data = self.activeCrafting[client]
     if not data then return end
 
-    self.activeCooking[client] = nil
-    client.IsCooking = nil
+    self.activeCrafting[client] = nil
+    client.IsCrafting = nil
 
     if IsValid(client) then
         client:SetAction()
@@ -21,23 +21,23 @@ function PLUGIN:StopCooking(client, reason)
     end
 
     if reason == "cancel" and IsValid(client) then
-        client:Notify("You have stopped cooking")
-    elseif reason == "stove_removed" and IsValid(client) then
-        client:Notify("The stove was removed while you were cooking")
+        client:Notify("You have stopped crafting")
+    elseif reason == "bench_removed" and IsValid(client) then
+        client:Notify("The bench was removed while you were crafting")
     end
 end
 
-function PLUGIN:FinishCooking(client)
-    local data = self.activeCooking[client]
+function PLUGIN:FinishCrafting(client)
+    local data = self.activeCrafting[client]
     if not data then return end
 
     if not IsValid(client) then
-        self.activeCooking[client] = nil
+        self.activeCrafting[client] = nil
         return
     end
 
-    if not IsValid(data.stove) then
-        self:StopCooking(client, "stove_removed")
+    if not IsValid(data.bench) then
+        self:StopCrafting(client, "bench_removed")
         return
     end
 
@@ -48,7 +48,7 @@ function PLUGIN:FinishCooking(client)
     if not inv then return end
 
     local toRemove = {}
-    for _, ing in ipairs(data.recipe.Ingredients) do
+    for _, ing in ipairs(data.recipe.ItemsToCraft) do
         local items = inv:GetItemsByUniqueID(ing.item) or {}
         local collected = {}
         for _, item in ipairs(items) do
@@ -58,7 +58,7 @@ function PLUGIN:FinishCooking(client)
 
         if #collected < ing.amount then
             self:StopCooking(client, "cancel")
-            client:Notify("You are missing ingredients, cooking cancelled")
+            client:Notify("You are missing items, crafting cancelled")
             return
         end
 
@@ -71,108 +71,108 @@ function PLUGIN:FinishCooking(client)
         end
     end
 
-    self.activeCooking[client] = nil
-    client.IsCooking = nil
+    self.activeCrafting[client] = nil
+    client.IsCrafting = nil
     client:SetAction()
     client:SetMoveType(MOVETYPE_WALK)
 
     for _, out in ipairs(data.recipe.ItemsToGive or {}) do
         for i = 1, out.amount do
             if not inv:Add(out.item) then
-                ix.item.Spawn(out.item, data.stove:GetPos())
+                ix.item.Spawn(out.item, data.bench:GetPos())
             end
         end
     end
 
     if data.recipe.ExperienceToGive then
-        char:UpdateAttrib("cook", data.recipe.ExperienceToGive)
+        char:UpdateAttrib("craft", data.recipe.ExperienceToGive)
     end
 
-    client:Notify("You cooked " .. (data.recipe.Name or "something") .. "!")
+    client:Notify("You crafted " .. (data.recipe.Name or "something") .. "!")
 end
 
-function PLUGIN:CookRecipe(client, id, stove)
+function PLUGIN:Craft(client, id, bench)
     if type(id) ~= "string" or #id > 64 then return false, "invalid recipe" end
 
-    local recipe = self.CookingRecipes[id]
+    local recipe = self.CraftingRecipes[id]
     if not recipe then return false, "invalid recipe" end
-    if self.activeCooking[client] then return false, "You are already cooking" end
+    if self.activeCooking[client] then return false, "You are already crafting" end
 
     local char = client:GetCharacter()
     if not char then return false, "no character" end
 
     local attribs = char:GetData("attribs", {})
-    local skill = attribs["cook"] or 0
-    if skill < (recipe.MinExpToCook or 0) then
-        return false, "You lack the experience to cook this"
+    local skill = attribs["craft"] or 0
+    if skill < (recipe.MinExpToCraft or 0) then
+        return false, "You lack the experience to craft this"
     end
 
     local inv = char:GetInventory()
     if not inv then return false, "no inventory" end
 
-    if not IsValid(stove) or stove:GetClass() ~= "heawi_cooking_entity" then
-        return false, "invalid stove"
+    if not IsValid(bench) or bench:GetClass() ~= "heawi_crafing_entity" then
+        return false, "invalid bench"
     end
 
-    if client:GetPos():DistToSqr(stove:GetPos()) > (70 * 70) then
-        return false, "You are not near a stove"
+    if client:GetPos():DistToSqr(bench:GetPos()) > (70 * 70) then
+        return false, "You are not near a bench"
     end
 
-    for _, ing in ipairs(recipe.Ingredients) do
+    for _, ing in ipairs(recipe.ItemsToCraft) do
         local items = inv:GetItemsByUniqueID(ing.item) or {}
         local count = 0
         for _ in pairs(items) do count = count + 1 end
         if count < ing.amount then
-            return false, "You are missing ingredients"
+            return false, "You are missing items"
         end
     end
 
-    client.IsCooking = true
+    client.IsCrafting = true
     client:SetMoveType(MOVETYPE_NONE)
 
-    local timerID = "heawi_cooking_" .. client:SteamID64()
+    local timerID = "heawi_crafting_" .. client:SteamID64()
 
-    self.activeCooking[client] = {
+    self.activeCrafting[client] = {
         recipe = recipe,
-        stove = stove,
+        bench = bench,
         timerID = timerID,
     }
 
-    client:SetAction("Cooking " .. recipe.Name .. "...", recipe.PreparationTime)
+    client:SetAction("Crafting " .. recipe.Name .. "...", recipe.CraftingTime)
 
-    timer.Create(timerID, recipe.PreparationTime, 1, function()
+    timer.Create(timerID, recipe.CraftingTime, 1, function()
         if IsValid(client) then
-            PLUGIN:FinishCooking(client)
+            PLUGIN:FinishCrafting(client)
         end
     end)
 
     return true
 end
 
-net.Receive("heawi_cooking_start", function(len, client)
+net.Receive("heawi_crafting_start", function(len, client)
     local recipeID = net.ReadString()
 
-    if client.heawi_cookingCooldown and client.heawi_cookingCooldown > CurTime() then return end
-    client.heawi_cookingCooldown = CurTime() + 1
+    if client.heawi_craftingCooldown and client.heawi_craftingCooldown > CurTime() then return end
+    client.heawi_craftingCooldown = CurTime() + 1
 
-    if client.IsCooking then return end
+    if client.IsCrafting then return end
 
     if type(recipeID) ~= "string" or #recipeID > 64 then return end
 
-    local stove
+    local bench
     for _, ent in ipairs(ents.FindInSphere(client:GetPos(), 70)) do
         if ent:GetClass() == "heawi_cooking_entity" then
-            stove = ent
+            bench = ent
             break
         end
     end
 
-    if not IsValid(stove) then
-        client:Notify("You are not near a stove")
+    if not IsValid(bench) then
+        client:Notify("You are not near a bench")
         return
     end
 
-    local ok, err = PLUGIN:CookRecipe(client, recipeID, stove)
+    local ok, err = PLUGIN:Craft(client, recipeID, bench)
     if not ok then
         client:Notify(err)
     end

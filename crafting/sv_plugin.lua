@@ -57,7 +57,7 @@ function PLUGIN:FinishCrafting(client)
         end
 
         if #collected < ing.amount then
-            self:StopCooking(client, "cancel")
+            self:StopCrafting(client, "cancel")
             client:Notify("You are missing items, crafting cancelled")
             return
         end
@@ -96,7 +96,7 @@ function PLUGIN:Craft(client, id, bench)
 
     local recipe = self.CraftingRecipes[id]
     if not recipe then return false, "invalid recipe" end
-    if self.activeCooking[client] then return false, "You are already crafting" end
+    if self.activeCrafting[client] then return false, "You are already crafting" end
 
     local char = client:GetCharacter()
     if not char then return false, "no character" end
@@ -110,7 +110,8 @@ function PLUGIN:Craft(client, id, bench)
     local inv = char:GetInventory()
     if not inv then return false, "no inventory" end
 
-    if not IsValid(bench) or bench:GetClass() ~= "heawi_crafing_entity" then
+    -- FIX 1: was "heawi_crafing_entity" (missing 't')
+    if not IsValid(bench) or bench:GetClass() ~= "heawi_crafting_entity" then
         return false, "invalid bench"
     end
 
@@ -119,10 +120,9 @@ function PLUGIN:Craft(client, id, bench)
     end
 
     for _, ing in ipairs(recipe.ItemsToCraft) do
+        -- FIX 2: was using pairs() loop to count, now uses # on the array directly
         local items = inv:GetItemsByUniqueID(ing.item) or {}
-        local count = 0
-        for _ in pairs(items) do count = count + 1 end
-        if count < ing.amount then
+        if #items < ing.amount then
             return false, "You are missing items"
         end
     end
@@ -161,7 +161,7 @@ net.Receive("heawi_crafting_start", function(len, client)
 
     local bench
     for _, ent in ipairs(ents.FindInSphere(client:GetPos(), 70)) do
-        if ent:GetClass() == "heawi_cooking_entity" then
+        if ent:GetClass() == "heawi_crafting_entity" then
             bench = ent
             break
         end

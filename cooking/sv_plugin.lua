@@ -120,9 +120,7 @@ function PLUGIN:CookRecipe(client, id, stove)
 
     for _, ing in ipairs(recipe.Ingredients) do
         local items = inv:GetItemsByUniqueID(ing.item) or {}
-        local count = 0
-        for _ in pairs(items) do count = count + 1 end
-        if count < ing.amount then
+        if #items < ing.amount then
             return false, "You are missing ingredients"
         end
     end
